@@ -1,5 +1,12 @@
 <template>
   <div id="app">
+    <header class="hd">
+      <div class="hd_left">
+        <img src="~@/assets/img/logo.png" alt="">
+        <a href="#">口罩即時查</a>
+      </div>
+      <div class="hd_right"></div>
+    </header>
     <div class="row no-gutters">
       <div class="col-sm-3">
         <div class="toolbox">
@@ -7,7 +14,8 @@
             <div class="form-group d-flex">
               <label for="cityName" class="mr-2 col-form-label text-right">縣市</label>
               <div class="flex-fill">
-                <select id="cityName" class="form-control" v-model="select.city">
+                <select id="cityName" class="form-control"
+                v-model="select.city" @change="removeMarker(); updateMap()">
                   <option value="">--select One--</option>
                   <option :value="c.CityName" v-for="c in CityCountyData"
                   :key="c.CityName">
@@ -63,14 +71,42 @@ export default {
     data: [],
     CityCountyData,
     select: {
-      city: '臺北市',
+      city: '高雄市',
     },
   }),
   methods: {
     // 更新圖標
     updateMap() {
-      const pharmacies = this.data.filter((pharmacy) => console.log(pharmacy));
-      console.log(pharmacies);
+      const pharmacies = this.data.filter((pharmacy) => (
+        pharmacy.properties.county === this.select.city));
+      pharmacies.forEach((pharmacy) => {
+        const { properties, geometry } = pharmacy;
+        L.marker([
+          geometry.coordinates[1],
+          geometry.coordinates[0],
+          // 寫入圖標內容
+        ]).addTo(osmMap).bindPopup(`
+        <h5>${properties.name}</h5> <br>
+        口罩剩餘：成人-${properties.mask_adult}｜兒童-${properties.mask_child}<br>
+        地址：<a href="https://www.google.com/maps/place/${properties.address}">${properties.address}</a><br>
+        電話：${properties.phone}<br>
+        備註：${properties.note}<br>
+        <small>最後更新時間：${properties.updated}</small>`);
+        console.log(properties);
+      });
+      this.penTo(pharmacies[0]);
+    },
+    removeMarker() {
+      osmMap.eachLayer((layer) => {
+        if (layer instanceof L.Marker) {
+          osmMap.removeLayer(layer);
+        }
+      });
+    },
+    penTo(item) {
+      const { properties, geometry } = item;
+      console.log(properties);
+      osmMap.panTo([geometry.coordinates[1], geometry.coordinates[0]]);
     },
   },
   mounted() {
@@ -79,6 +115,7 @@ export default {
     // 取得遠端資料
     this.$http.get(url).then((response) => {
       this.data = response.data.features;
+      this.updateMap();
     });
 
     osmMap = L.map('map', {
@@ -109,8 +146,32 @@ export default {
 .toolbox {
   height: 100vh;
   overflow-y: auto;
+  background-color: #fafafa;
   a {
   cursor: pointer;
+  }
+}
+.hd {
+  height: 110px;
+  width: 100%;
+  position: relative;
+  .hd_left{
+    position: absolute;
+    left: 0px;
+    width: 50%;
+    font-family: 'MElle HK Xbold';
+    font-size: 22pt;
+    line-height: 110px;
+    img {
+      margin-left: 55px;
+      margin-bottom: 10px;
+      width: 10%;
+    }
+    a {
+      margin-left: 20px;
+      color: #34495e;
+      text-decoration:none
+    }
   }
 }
 </style>
