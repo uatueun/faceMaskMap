@@ -1,11 +1,20 @@
 <template>
   <div id="app">
-    <header class="hd">
-      <div class="hd_left">
+    <header class="row hd">
+      <div class="col-sm-12 col-md-3 hd_left">
         <img src="~@/assets/img/logo.png" alt="">
         <a href="#">口罩即時查</a>
       </div>
-      <div class="hd_right"></div>
+      <div class="d-none d-md-block col-md-3 hd_right">
+        <ul>
+          <li>
+            <a href="#">口罩供給現況</a>
+          </li>
+          <li>
+            <a href="#">口罩怎麼買</a>
+          </li>
+        </ul>
+      </div>
     </header>
     <div class="row no-gutters">
       <div class="col-sm-3">
@@ -16,7 +25,7 @@
               <div class="flex-fill">
                 <select id="cityName" class="form-control"
                 v-model="select.city" @change="removeMarker(); updateMap()">
-                  <option value="">--select One--</option>
+                  <option value="">-- 請選擇縣市 --</option>
                   <option :value="c.CityName" v-for="c in CityCountyData"
                   :key="c.CityName">
                     {{ c.CityName }}
@@ -27,23 +36,32 @@
             <div class="form-group d-flex">
               <label for="area" class="mr-2 col-form-label text-right">地區</label>
               <div class="flex-fill">
-                <select id="area" class="form-control">
-                  <option value="">-- Select One --</option>
+                <select id="area" class="form-control" v-if="select.city.length"
+                v-model="select.area" @change="updateSelect">
+                  <option value="">-- 請選擇地區 --</option>
+                  <option :value="a.areaName" v-for="a in CityCountyData.find((city) =>
+                    city.CityName === select.city).AreaList" :key="a.AreaName">
+                  {{ a.AreaName }}
+                  </option>
                 </select>
               </div>
             </div>
               <p class="mb-0 small text-muted text-right">請先選擇區域查看（綠色表示還有口罩）</p>
             </div>
             <ul class="list-group">
-              <template>
-                <a class="list-group-item text-left">
-                  <h3>藥局名稱</h3>
+              <template v-for="(item, key) in data">
+                <a class="list-group-item text-left" :key="key"
+                  v-if="item.properties.county === select.city
+                  && item.properties.town === select.area"
+                  :class="{ 'highlight': item.properties.mask_adult || item.properties.mask_child}"
+                  @click="penTo(item)">
+                  <h3>{{ item.properties.name }}</h3>
                   <p class="mb-0">
-                    成人口罩：1 | 兒童口罩：2
+                    成人口罩：{{ item.properties.mask_adult}} | 兒童口罩：{{ item.properties.mask_child}}
                   </p>
-                  <p class="mb-0">地址：<a href="https://www.google.com.tw/maps/place/..."
-                  target="_blank" title="Google Map">
-                  地址</a>
+                  <p class="mb-0">地址：<a :href="`https://www.google.com.tw/maps/place/${item.properties.address}`"
+                    target="_blank" title="Google Map">
+                    {{ item.properties.address }}</a>
                   </p>
                 </a>
               </template>
@@ -63,7 +81,25 @@ import L from 'leaflet';
 import CityCountyData from './assets/CityCountyData.json';
 
 let osmMap = {};
-console.log(L);
+
+// 聲明圖標樣式
+const iconsConfig = {
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+};
+const icons = {
+  green: new L.Icon({
+    iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+    ...iconsConfig,
+  }),
+  grey: new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-grey.png',
+    ...iconsConfig,
+  }),
+};
+console.log(icons);
 
 export default {
   name: 'App',
@@ -72,6 +108,7 @@ export default {
     CityCountyData,
     select: {
       city: '高雄市',
+      area: '苓雅區',
     },
   }),
   methods: {
@@ -137,6 +174,7 @@ export default {
 <style lang="scss">
 //載入bootstrap.scss
 @import 'bootstrap/scss/bootstrap';
+
 #map {
   height: 100%;
 }
@@ -149,29 +187,6 @@ export default {
   background-color: #fafafa;
   a {
   cursor: pointer;
-  }
-}
-.hd {
-  height: 110px;
-  width: 100%;
-  position: relative;
-  .hd_left{
-    position: absolute;
-    left: 0px;
-    width: 50%;
-    font-family: 'MElle HK Xbold';
-    font-size: 22pt;
-    line-height: 110px;
-    img {
-      margin-left: 55px;
-      margin-bottom: 10px;
-      width: 10%;
-    }
-    a {
-      margin-left: 20px;
-      color: #34495e;
-      text-decoration:none
-    }
   }
 }
 </style>

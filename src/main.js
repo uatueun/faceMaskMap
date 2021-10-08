@@ -7,6 +7,7 @@ import axios from 'axios';
 import VueAxios from 'vue-axios';
 // 外部套件往前 自寫套件往後
 import App from './App.vue';
+import '@/assets/scss/header.scss';
 
 Vue.config.productionTip = false;
 Vue.use(VueAxios, axios);
